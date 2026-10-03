@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111f" />
+  <title>FlowTap — Painel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="admin-shell">
+    <section class="admin-header">
+      <div>
+        <div class="brand">Flow<span>Tap</span></div>
+        <p>Painel de configuração</p>
+      </div>
+      <a class="ghost-btn" href="index.html?loja=demo">Ver demonstração</a>
+    </section>
+
+    <section class="admin-grid">
+      <div class="panel">
+        <div class="panel-title">
+          <div>
+            <span class="eyebrow">NOVO ESTABELECIMENTO</span>
+            <h1>Crie um FlowTap em minutos</h1>
+          </div>
+        </div>
+
+        <form id="storeForm">
+          <label>Nome do estabelecimento
+            <input id="name" required placeholder="Ex.: Barbearia do João" />
+          </label>
+
+          <label>Logo (URL da imagem)
+            <input id="logo" placeholder="https://..." />
+            <small>Na primeira versão usamos uma URL. Depois podemos colocar upload direto.</small>
+          </label>
+
+          <label>Pix
+            <input id="pix" required placeholder="chave Pix ou código Copia e Cola" />
+            <small>O cliente digitará o valor no próprio banco. O FlowTap não movimenta o dinheiro.</small>
+          </label>
+
+          <label>Link para avaliação no Google
+            <input id="google" required placeholder="https://g.page/.../review" />
+          </label>
+
+          <div class="two-col">
+            <label>Instagram
+              <input id="instagram" placeholder="@seuinstagram" />
+            </label>
+            <label>WhatsApp
+              <input id="whatsapp" placeholder="5543999999999" />
+            </label>
+          </div>
+
+          <button class="primary-btn" type="submit">Criar FlowTap</button>
+        </form>
+
+        <div id="result" class="result hidden"></div>
+      </div>
+
+      <div class="panel">
+        <span class="eyebrow">ESTABELECIMENTOS</span>
+        <h2>Seus FlowTaps</h2>
+        <div id="storeList" class="store-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
