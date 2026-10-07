@@ -1,73 +1,132 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#07111f" />
-  <title>FlowTap — Painel</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin — FlowTap</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; color: #111; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    h2 { font-size: 1.2rem; margin-top: 0; margin-bottom: 20px; color: #222; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+    input { width: 100%; padding: 10px 12px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; }
+    button { width: 100%; background: #0066ff; color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+    button:hover { background: #0052cc; }
+    .loja-item { background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+    .loja-nome { font-weight: bold; font-size: 1.05rem; margin-bottom: 4px; }
+    .loja-url { font-size: 0.85rem; color: #0066ff; word-break: break-all; text-decoration: none; display: block; margin-top: 6px; }
+    .btn-copy { background: #28a745; margin-top: 8px; padding: 6px 10px; font-size: 0.85rem; width: auto; }
+  </style>
 </head>
 <body>
-  <main class="admin-shell">
-    <section class="admin-header">
-      <div>
-        <div class="brand">Flow<span>Tap</span></div>
-        <p>Painel de configuração</p>
-      </div>
-      <a class="ghost-btn" href="index.html?loja=demo">Ver demonstração</a>
-    </section>
 
-    <section class="admin-grid">
-      <div class="panel">
-        <div class="panel-title">
-          <div>
-            <span class="eyebrow">NOVO ESTABELECIMENTO</span>
-            <h1>Crie um FlowTap em minutos</h1>
-          </div>
+<div class="container">
+  <h1>FlowTap Admin</h1>
+
+  <div class="grid">
+    <!-- Formulário -->
+    <div class="card">
+      <h2>Novo Cliente / Loja</h2>
+      <form id="form-loja">
+        <label>Nome do Comércio</label>
+        <input type="text" id="nome" placeholder="Ex: Padaria do João" required>
+
+        <label>Chave Pix</label>
+        <input type="text" id="pix" placeholder="CPF, Telemóvel, Email ou Chave Aleatória" required>
+
+        <label>Link de Avaliação Google</label>
+        <input type="url" id="google_link" placeholder="https://g.page/r/...">
+
+        <label>URL do Logo / Imagem (Opcional)</label>
+        <input type="url" id="logo_url" placeholder="https://... (deixe em branco se não tiver)">
+
+        <button type="submit" id="btn-salvar">Salvar no Banco de Dados</button>
+      </form>
+    </div>
+
+    <!-- Lista de Clientes Salvos -->
+    <div class="card">
+      <h2>Clientes Cadastrados</h2>
+      <div id="lista-lojas">Carregando lojas...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://ffjcoecwsecanazyaobf.supabase.co';
+  const SUPABASE_KEY = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmamNvZWN3c2VjYW5henlhb2JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTE4MDUsImV4cCI6MjEwNjk2NzgwNX0.c8pjp4hdE4i-JhSrj7gJflbWQxKi_DrrSh_JY2IZZlk';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function gerarSlug(texto) {
+    return texto.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  async function carregarLojas() {
+    const lista = document.getElementById('lista-lojas');
+    const { data, error } = await _supabase.from('lojas').select('*').order('created_at', { ascending: false });
+
+    if (error) {
+      lista.innerHTML = 'Erro ao carregar lojas.';
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      lista.innerHTML = '<p style="color:#777;">Nenhum cliente cadastrado ainda.</p>';
+      return;
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+
+    lista.innerHTML = data.map(loja => {
+      const linkFinal = `${baseUrl}?loja=${loja.slug}`;
+      return `
+        <div class="loja-item">
+          <div class="loja-nome">${loja.nome}</div>
+          <small>Pix: ${loja.pix}</small>
+          <a href="${linkFinal}" target="_blank" class="loja-url">${linkFinal}</a>
+          <button class="btn-copy" onclick="navigator.clipboard.writeText('${linkFinal}'); alert('Link copiado!');">Copiar Link NFC</button>
         </div>
+      `;
+    }).join('');
+  }
 
-        <form id="storeForm">
-          <label>Nome do estabelecimento
-            <input id="name" required placeholder="Ex.: Barbearia do João" />
-          </label>
+  document.getElementById('form-loja').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-salvar');
+    btn.disabled = true;
+    btn.innerText = 'Salvando...';
 
-          <label>Logo (URL da imagem)
-            <input id="logo" placeholder="https://..." />
-            <small>Na primeira versão usamos uma URL. Depois podemos colocar upload direto.</small>
-          </label>
+    const nome = document.getElementById('nome').value;
+    const pix = document.getElementById('pix').value;
+    const google_link = document.getElementById('google_link').value;
+    const logo_url = document.getElementById('logo_url').value || 'https://cdn-icons-png.flaticon.com/512/893/893081.png';
+    const slug = gerarSlug(nome) + '-' + Math.floor(Math.random() * 1000);
 
-          <label>Pix
-            <input id="pix" required placeholder="chave Pix ou código Copia e Cola" />
-            <small>O cliente digitará o valor no próprio banco. O FlowTap não movimenta o dinheiro.</small>
-          </label>
+    const { error } = await _supabase.from('lojas').insert([{ nome, slug, pix, google_link, logo_url }]);
 
-          <label>Link para avaliação no Google
-            <input id="google" required placeholder="https://g.page/.../review" />
-          </label>
+    if (error) {
+      alert('Erro ao salvar no Supabase: ' + error.message);
+    } else {
+      document.getElementById('form-loja').reset();
+      carregarLojas();
+    }
 
-          <div class="two-col">
-            <label>Instagram
-              <input id="instagram" placeholder="@seuinstagram" />
-            </label>
-            <label>WhatsApp
-              <input id="whatsapp" placeholder="5543999999999" />
-            </label>
-          </div>
+    btn.disabled = false;
+    btn.innerText = 'Salvar no Banco de Dados';
+  });
 
-          <button class="primary-btn" type="submit">Criar FlowTap</button>
-        </form>
+  carregarLojas();
+</script>
 
-        <div id="result" class="result hidden"></div>
-      </div>
-
-      <div class="panel">
-        <span class="eyebrow">ESTABELECIMENTOS</span>
-        <h2>Seus FlowTaps</h2>
-        <div id="storeList" class="store-list"></div>
-      </div>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
 </body>
 </html>

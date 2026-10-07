@@ -1,16 +1,76 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#07111f" />
-  <title>FlowTap — Demonstração</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowTap</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #111; color: #fff; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: #1e1e1e; width: 100%; max-width: 400px; padding: 30px 20px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 16px; border: 3px solid #333; }
+    h1 { font-size: 1.5rem; margin: 0 0 24px 0; }
+    .btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 16px; margin-bottom: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; text-decoration: none; transition: transform 0.1s; }
+    .btn:active { transform: scale(0.98); }
+    .btn-pix { background: #00bdae; color: #fff; }
+    .btn-google { background: #4285f4; color: #fff; }
+    .footer { margin-top: 24px; font-size: 0.8rem; color: #666; }
+  </style>
 </head>
 <body>
-  <main id="app"></main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="app.js"></script>
+<div class="card" id="app">
+  <p id="status">Carregando informações...</p>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://ffjcoecwsecanazyaobf.supabase.co';
+  const SUPABASE_KEY = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmamNvZWN3c2VjYW5henlhb2JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTE4MDUsImV4cCI6MjEwNjk2NzgwNX0.c8pjp4hdE4i-JhSrj7gJflbWQxKi_DrrSh_JY2IZZlk';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  async function inicializar() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('loja');
+    const app = document.getElementById('app');
+
+    if (!slug) {
+      app.innerHTML = '<h2>FlowTap</h2><p>Nenhuma loja selecionada.</p>';
+      return;
+    }
+
+    const { data, error } = await _supabase.from('lojas').select('*').eq('slug', slug).single();
+
+    if (error || !data) {
+      app.innerHTML = '<h2>FlowTap</h2><p>Loja não encontrada.</p>';
+      return;
+    }
+
+    app.innerHTML = `
+      <img src="${data.logo_url || 'https://cdn-icons-png.flaticon.com/512/893/893081.png'}" class="logo" alt="Logo">
+      <h1>${data.nome}</h1>
+
+      <button class="btn btn-pix" onclick="copiarPix('${data.pix}')">
+        Copiar Chave Pix
+      </button>
+
+      ${data.google_link ? `
+        <a href="${data.google_link}" target="_blank" class="btn btn-google">
+          Avaliar no Google (5★)
+        </a>
+      ` : ''}
+
+      <div class="footer">Tecnologia FlowTap</div>
+    `;
+  }
+
+  function copiarPix(chave) {
+    navigator.clipboard.writeText(chave);
+    alert('Chave Pix copiada para a área de transferência!');
+  }
+
+  inicializar();
+</script>
+
 </body>
 </html>
